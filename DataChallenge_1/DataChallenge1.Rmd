@@ -153,6 +153,6 @@ ggplot(production_map, aes(long,lat,group = group)) +
 ```
 
 **Figure 5:**
-This map shows the total milk production for each state over the time between 2010 and 2015. The overall production is relatively even across the states. It can be clearly observed that several states produced far more volumes of milks than others such as California and Wisconsin.  Idaho, New York, Pensilvania and Texas also have high milk production.
+This map shows the total milk production for each state over the time between 2010 and 2015. The overall production is relatively even across the states. It can be clearly observed that several states produced far more volumes of milks than others such as California and Wisconsin.  Idaho, New York, Pennsylvania and Texas also have high milk production.
 
 
