@@ -1,0 +1,159 @@
+---
+title: "Data Challenge 1"
+author: "Yanruyu Zhu(yaz4004)"
+date: "9/28/2020"
+output: 
+  html_document:
+  fig_height: 4.5
+  fig_width: 4.5
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Link to github repo: https://github.com/ZhuYRY/5018_DataScience.git
+
+# Figure 1
+```{r message=FALSE, warning=FALSE}
+## load in the required libraries 
+library(readr)
+library(dplyr)
+library(ggplot2)
+
+## read in the data 
+state_milk_production <- read_csv("state_milk_production.csv")
+clean_cheese <- read_csv("clean_cheese.csv")
+fluid_milk_sales <- read_csv("fluid_milk_sales.csv")
+milk_products_facts <- read_csv("milk_products_facts.csv")
+milkcow_facts <- read_csv("milkcow_facts.csv")
+head(state_milk_production)
+```
+
+
+
+```{r}
+## plot of cheese production over time
+clean_cheese %>% 
+  ## initalizes ggplot object of pounds verus year grouped and colored by cheese type
+  ggplot(aes(x=Year, y=clean_cheese$`Total American Chese`)) + 
+  ## make lines
+  geom_line(aes(y=clean_cheese$`Total American Chese`, colour="Total American Cheese")) +
+  geom_line(aes(y=clean_cheese$`Total Italian Cheese`, colour="Total Italian Cheese")) +
+  geom_line(aes(y=clean_cheese$`Total Natural Cheese`, colour="Total Natural Cheese")) +
+  geom_line(aes(y=clean_cheese$`Total Processed Cheese Products`, colour="Total Processed Cheese Products")) +
+  ggtitle('Pounds of Cheese Products Consumption Per Person') +  ## add title 
+  ylab('Pounds of Cheese Product') + ## change y-axis label 
+  xlab('Year') + ## change x-axis label 
+  labs(color = "Type of Cheese")  ## change title of legend
+```
+
+**Figure 1:** This plot shows the amount (in pounds) of cheese products consumption per person over time between 1975 and 2017. The total consumption of natural cheese and Italian cheese have increased significantly over time. The total consumption of American cheese has increased gradually, while the total consumption of processed cheese products has not changed a lot over time. Total natural cheese consumption per person increased the most.
+
+# Figure 2
+
+```{r}
+fluid_milk_sales %>% 
+  ## filter out each milk type
+  filter(milk_type != "Total Production") %>%
+  ## initialize ggplot object of pounds versus milk type
+  ggplot(aes(x = milk_type, y = pounds, fill = milk_type)) + 
+  ## make boxplots of production amount by each type
+  geom_boxplot() +
+  ## log base 10 transform the data 
+  scale_y_continuous(trans='log10') +
+  ## add title, xy axis label
+  labs(x = "Milk Type", y="Pounds of milk product per year", title = "Boxplots of Pounds of milk product per year by the Milk Type", fill = "Category of Milk Type")+
+  theme(legend.position = "bottom")
+```
+
+**Figure 2:** This is the boxplots of Pounds of Milk Product Per Year by the Milk Type over time between 1975 and 2017. The pounds sold per year is log 10 base transformed. Over the time period, on average Whole milk and Reduced Fat (2%) milk have the highest sales amount, while eggnog is the least sold fluid milk type. The sales amount varies most for flavored (not whole) milk and skim milk over the years.
+
+
+# Figure 3
+
+```{r}
+milkcow_facts %>%
+  ## calculate ration proportion for each year
+  mutate(ration_prop = dairy_ration/avg_price_milk) %>%
+  ## initialize ggplot object of ration proportion versus year
+  ggplot(aes(x = year)) +
+  ## Column chart of ration proportion for each year
+  geom_col(aes(y = ration_prop, colour = "Ration price/Milk price"), size = 0.5, color = "blue", fill = "lightblue", alpha = 0.6) +
+  ## line plot of exact value of average milk price ($/lbs)
+  geom_line(aes(y = avg_price_milk*2, 
+                colour = "Average price paid for milk"), size = 1.2) + 
+  ## line plot of exact value of average dairy ration price ($/lbs)
+  geom_line(aes(x = year, y = dairy_ration*2, 
+                colour = "Average price paid for dairy cow rations"), 
+            size = 1.5) +
+  ## scale the right y axis
+  scale_y_continuous(sec.axis = sec_axis(~./2, name = "Dollars per Pound")) + 
+  ## add title, x label, left y label
+  labs(x = "Year", y = "Ration Proportion of Milk Price", 
+       title = "Average price paid for dairy cow rations' proportion of Average price paid for milk", 
+       subtitle = "dollars per pound", 
+       colour = "Line color:") +
+  theme(legend.position = "bottom") + 
+  ## change color
+  scale_color_manual(values = c("#E69F00", "#56B4E9"))
+
+```
+
+**Figure 3:** The lines show the exact values of average price paid for dairy cow rations and the average price paid for milk over time between 1975 and 2017. Both price remain almost unchanged from 1975 to 2005, and begin to increase in general since 2005. The bars show the proportion of average price paid for dairy cow rations in the average price paid for milk. This proportion fluctuates slightly from 1975 to 2005, and begins to increase in general since 2005.
+
+
+# Figure 4
+
+```{r,warning=FALSE}
+## load in the required libraries
+library(fuzzyjoin)
+require(maps)
+
+production = state_milk_production %>%
+  filter(year>=2010 & year<=2015) %>% ## filter year for 2010-2015
+  group_by(state) %>% ## group by each state
+  summarise(milk_produced = sum(milk_produced)) ## sum the total production for 2010-2015
+  
+production$region = production$state
+
+## initialize a US map
+map = map_data("state")
+production_map = regex_left_join(map, production, by = "region",ignore_case = TRUE)
+ggplot(production_map, aes(long,lat,group = group)) +
+  ## make polygons to show milk production by state, draw state line
+  geom_polygon(aes(fill = milk_produced), color = "white")+
+  scale_fill_viridis_c(option = "c") +
+  theme(legend.position = "right") +
+  labs(x = "longitude" , y = "latitude", title = "Milk production for 2010-2015",fill = "milk production/pound")
+
+```
+
+**Figure 4:** This map shows the total milk production for each state over the time between 2010 and 2015. The overall production is relatively even across the states. It can be clearly observed that several states produced far more volumes of milks than others such as California and Wisconsin. Idaho, New York, Pennsylvania and Texas also have high milk production.
+
+
+
+# Figure 5
+
+```{r}
+state_milk_production %>%
+  # filter on year of 2010-205, Northeast region
+  filter(year>=2010 & year<=2015 & region == "Northeast") %>%
+  # initialize ggplot object of milk produced versus year
+  ggplot(aes(year, milk_produced/10^9, fill=state)) +
+  # stacked bar chart 
+  geom_bar(stat="identity") + 
+  # change title, x label, y label
+  labs(title = "Billions of Pounds of Milk Produced by State in Northeast",
+       x = "Year", y = "Milk Produced (Billion lbs)") 
+```
+
+**Figure 5:** This stacked bar chart displays the amount of milk produced (in Billion lbs) of each state in Northeast region over time between 2010 and 2015. The total amount of milk produced in Northeast did not change much, but just increased a little over the years. Each state's milk production amount did not change much, only New York state shows apparent increase. It is obvious that New York and Pennsylvania produce the most among all 11 states in Northeast region.
+
+
+
+
+
+
+
+
