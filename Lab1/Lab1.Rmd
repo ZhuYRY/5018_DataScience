@@ -1,0 +1,54 @@
+---
+title: "Lab1"
+author: "Yanruyu Zhu (yaz4004)"
+date: "10/1/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(mdsr)
+library(dplyr)
+library(ggplot2)
+```
+
+```{r}
+#make data.fram of baby names
+BabyName = make_babynames_dist()
+BabyName %>%
+  # Group by sex and name
+  group_by(sex, name) %>%
+  # Calculate the total number of people with each name
+  # Calculate the percent of people who are dead today
+  summarise(total = sum(n), dead_per = 1-sum(est_alive_today)/sum(n)) %>%
+  # Only use common names (occurred more than 100,000 times)
+  filter(total > 100000) %>%
+  # Select the top 10 ‘deadest’ names
+  top_n(10) %>%
+  # GGPlot of the percent dead today (y) versus the name (x).
+  ggplot(aes(x=reorder(name,dead_per), y=dead_per, fill= sex)) +
+  # barplot
+  geom_bar(stat = "identity") +
+  # Flip the coordinates
+  coord_flip() +
+  # change the colors
+  scale_fill_manual(values = c("#e1ad01","#1C86EE")) +
+  # titles
+  labs(x="Name", y="Dead percent", title="Deadest Names", subtitle="Estimated percentage of Americans with a given name born since 1900 who were dead as of Jan. 1, 2014") + 
+  # Add a label with the percent dead
+  geom_text(aes(label=round(dead_per*100,1)),
+            position = position_stack(vjust=1.05)) +
+  theme(axis.title.x = element_blank(),axis.title.y = element_blank(),
+        plot.subtitle=element_text(size = 8))
+
+```
+
+
+
+
+
+
+
