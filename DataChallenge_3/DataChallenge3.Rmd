@@ -1,0 +1,187 @@
+---
+title: "DataChallenge3"
+author: "Yanruyu Zhu (yaz4004)"
+date: "10/22/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Link to github repo: https://github.com/ZhuYRY/5018_DataScience.git
+
+
+```{r message=FALSE, warning=FALSE}
+# load in Packages
+library(ggplot2)
+library(dplyr)
+library(purrr)
+library(tidyverse)
+library(tools)
+library(OneR)
+library(knitr)
+library(readr)
+library(Hmisc)
+```
+
+```{r message=FALSE, warning=FALSE}
+# load in Packages and data
+library(tidytuesdayR)
+tuesdata <- tidytuesdayR::tt_load('2020-07-07')
+tuesdata <- tidytuesdayR::tt_load(2020, week = 28)
+
+coffee_ratings <- tuesdata$coffee_ratings
+```
+
+# 1)      
+
+Write a function that returns a table with the mean and standard deviation of the aroma through moisture columns of the coffee ratings data for different categories of coffee.             
+Produce the table for          
+(a) species,            
+(b) country of origin,             
+(c) binned mean altitude in meters.           
+
+### - Write a function that returns the mean and sd of a vector 
+
+```{r}
+### function 1 
+## a function that returns the mean and sd of a vector
+## return format: mean(sd)
+mean_sd <- function(x) {
+  paste0(round(mean(x, na.rm = FALSE), 3),           ## mean
+         ",(", round(sd(x, na.rm=FALSE),3),")")      ## StdDev
+}
+```
+
+### - Write a function that uses the function defined in the first step and returns the mean and sd of the aroma through moisture columns over a specific grouping as a table         
+
+```{r}
+### function 2
+## a function that uses the function 1 and returns the mean and sd of the aroma through moisture columns over a specific grouping as a table
+stats_table <- function(df, group_name) {
+  return <- df %>%
+    # Group by selected column
+    group_by_at({{group_name}}) %>%
+    # aroma through moisture
+    select(aroma:moisture) %>%
+    # calculate mean and sd
+    summarise(across(everything(), mean_sd)) 
+  
+  kable(return, 
+        col.names = gsub("_", " ", names(return)), 
+        caption = toTitleCase(gsub("_", " ", group_name))
+        )
+}
+```
+
+### - Wrangle the coffee ratings data frame
+```{r}
+coffee_data <- coffee_ratings %>%
+  filter(total_cup_points >= 0.00) %>%
+         # Change format mistakes in data record
+  mutate(altitude_mean_meters = recode(altitude_mean_meters,
+                                       '190164' = as.numeric('1901.64'),
+                                       '110000' = as.numeric('1100.00'),
+                                       '11000' = as.numeric('1100.00')),
+         # Change missing country of origin
+         country_of_origin = if_else(is.na(country_of_origin),
+                                     "Colombia",
+                                     country_of_origin),
+         # New categorical data to classify altitude/meters
+         binned_mean_altitude_meters = cut(altitude_mean_meters,
+                       breaks = c(0, 1000, 2000, 3000, 4000, 5000),
+                       labels = c('[0,1000)',
+                                  '[1000,2000)',
+                                  '[2000,3000)',
+                                  '[3000,4000)',
+                                  '[4000,5000)'), 
+                               right = FALSE
+                               ),
+         binned_mean_altitude_meters = replace_na(
+           as.character(binned_mean_altitude_meters), 
+           'Missing'
+           )
+         )%>%
+  # Select required columns
+  select(species, country_of_origin, binned_mean_altitude_meters, aroma:moisture)
+
+head(coffee_data)
+```
+
+### - Using map to calculate tables for the three groups in one step
+
+```{r,results='asis'}
+map(c('species', 
+      'country_of_origin', 
+      'binned_mean_altitude_meters'), 
+    stats_table, 
+    df = coffee_data)
+```
+
+
+# 2)           
+Write a function that makes a scatterplot of any two variables from the columns aroma:moisture and colors by a particular grouping.         
+Make the plot for        
+(1) aroma versus flavor colored by species          
+(2) balance versus body colored by binned mean altitude.       
+(Hint: Remove outliers to make a more compelling plot!)
+
+```{r}
+# Remove outliers
+coffee_data2 <- coffee_data%>%
+   filter(coffee_data$aroma > 0)
+```
+
+### - Write a function that plots two variables from a data frame and colors by group
+
+```{r}
+## a function that plots two variables from a data frame and colors by group
+scatter_f <- function(df, x, y, col_group) {
+  # Define graph title
+  # Sample: Scatterplot of X vs Y by Group
+  title = paste("Scatterplot of ", 
+                toTitleCase(x), 
+                "vs", 
+                toTitleCase(y), 
+                "by", 
+                toTitleCase(gsub("_", " ", col_group)))
+  ggplot(data = df, 
+         aes_string(x, y, 
+                    col = col_group)) +
+    geom_point(alpha=.3) +
+    # Rename title of the graph, xy axis
+    labs(title = title) +
+    xlab(toTitleCase(x)) +
+    ylab(toTitleCase(y)) +
+    # Style customize
+    guides(col = guide_legend(title = toTitleCase(gsub("_", " ",col_group)))) +
+    geom_jitter(width=.5,height=.5)
+}
+```
+
+### - Use pmap to iterate over a list of function arguments to produce two plots:    
+– Aroma versus flavor colored by species       
+– Balance versus body colored by binned mean altitude
+
+```{r}
+#Use pmap to create scatter plots of x_col by y_col grouped by group_col
+pmap(list(
+  x=c("aroma","balance"),
+  y=c("flavor","body"),
+  col_group=c("species", "binned_mean_altitude_meters")
+  ),
+  df = coffee_data2,
+  scatter_f)
+```
+
+
+
+
+
+
+
+
+
+
+
