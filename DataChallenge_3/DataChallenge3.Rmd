@@ -67,7 +67,7 @@ stats_table <- function(df, group_name) {
     select(aroma:moisture) %>%
     # calculate mean and sd
     summarise(across(everything(), mean_sd)) 
-  
+  # Return a well-designed format of table
   kable(return, 
         col.names = gsub("_", " ", names(return)), 
         caption = toTitleCase(gsub("_", " ", group_name))
@@ -98,6 +98,7 @@ coffee_data <- coffee_ratings %>%
                                   '[4000,5000)'), 
                                right = FALSE
                                ),
+         # Mark NAs as Missing
          binned_mean_altitude_meters = replace_na(
            as.character(binned_mean_altitude_meters), 
            'Missing'
@@ -106,17 +107,18 @@ coffee_data <- coffee_ratings %>%
   # Select required columns
   select(species, country_of_origin, binned_mean_altitude_meters, aroma:moisture)
 
+# Take a look at the cleaned dataset
 head(coffee_data)
 ```
 
 ### - Using map to calculate tables for the three groups in one step
 
 ```{r,results='asis'}
-map(c('species', 
+map(c('species',                          # Groups needed
       'country_of_origin', 
       'binned_mean_altitude_meters'), 
-    stats_table, 
-    df = coffee_data)
+    stats_table,                          # Function for mean and sd
+    df = coffee_data)                     # Dataset: cleaned coffee rating
 ```
 
 
@@ -165,7 +167,7 @@ scatter_f <- function(df, x, y, col_group) {
 – Balance versus body colored by binned mean altitude
 
 ```{r}
-#Use pmap to create scatter plots of x_col by y_col grouped by group_col
+#Use pmap to create scatter plots of x by y grouped by col_group
 pmap(list(
   x=c("aroma","balance"),
   y=c("flavor","body"),
