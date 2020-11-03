@@ -1,0 +1,97 @@
+---
+title: "Lab3_ZYRY"
+author: "Yanruyu Zhu (yaz4004)"
+date: "11/3/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Link to github repo: https://github.com/ZhuYRY/5018_DataScience.git
+
+
+```{r}
+# Initialize doors and goats
+doors = c('Car', 'Goat1', 'Goat2')
+goats = c('Goat1', 'Goat2')
+```
+
+```{r}
+# Function 1
+# one play of the Monty Hall simulation
+# switching the door (switch = TRUE) or not (switch = FALSE)
+monty_hall <- function(switch) {
+
+  ## select the door that the contestant picks
+  original <- sample(doors, 1)
+  
+  ## switch the two doors
+  ## makes (a,b) into (b,a) OR (b,a) into (a,b)
+  other_one <- function(x, two) {
+    ### x: the opened door
+    ### two: the two doors un chosen after the first pick
+    if (x == two[1]) {
+      two[2]
+    } else if (x == two[2]) {
+      two[1]
+    } else {
+      return("Invalid Input")
+    }
+  }
+  
+  ## Open a non-pize door
+  if (original == "Car") {
+    ## IF the original pick is Car
+    ## Randomly open one of the remaining non-prize doors (Goat1, Goat2)
+    throw_out <- sample(goats, 1)
+    ## New sequence of the doors
+    ## (Original pick[Car], opened[Goat], not-opened[Goat])
+    new = c(original, throw_out, other_one(throw_out, goats))
+  } else {
+    ## IF the original pick is a Goat
+    ## Open the remaining Goat
+    ## New sequence of the doors
+    ## (Original pick[Goat], opened[Goat], not-opened[Car])
+    new = c(original, other_one(original, goats), 'Car')
+  }
+
+  ## Final decision
+  if (switch == TRUE) {
+    ## IF switch the original pick
+    ## Pick the last in "new" sequence
+    fin_pick <- new[length(new)]
+  } else {
+    ## IF not switch the original pick
+    ## Remain the original(first) in "new" sequence
+    fin_pick <- new[1]
+  }
+  
+  ## TRUE if winning, FALSE if losing
+  return(fin_pick == "Car")
+}
+```
+
+```{r}
+# Function 2
+# n times monty_hall simulation
+monty_hall_sim <- function(n, switch) {
+  ## results of n trials
+  results <- replicate(n, monty_hall(switch))
+  ## proportion of winning
+  sum(results == TRUE)/n
+}
+```
+
+```{r}
+# Winning proportion if Switch
+paste("The proportion of winning if using the switching strategy")
+monty_hall_sim(n = 1000, switch = TRUE)
+```
+```{r}
+# Winning proportion if not Switch
+paste("The proportion of winning if not using the switching strategy")
+monty_hall_sim(n = 1000, switch = FALSE)
+```
+
